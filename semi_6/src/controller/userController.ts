@@ -2,8 +2,8 @@ import { Request, Response } from "express";
 import { validationResult } from "express-validator";
 import { rm, sc } from "../constants";
 import { fail, success } from "../constants/response";
-import { UserCreateDTO } from "../interfaces/UserCreateDTO";
-import { UserSignInDTO } from "../interfaces/UserSignInDTO";
+import { UserCreateDTO } from "../interfaces/user/UserCreateDTO";
+import { UserSignInDTO } from "../interfaces/user/UserSignInDTO";
 import jwtHandler from "../modules/jwtHandler";
 import { userService } from "../service";
 
@@ -66,8 +66,10 @@ const signInUser = async (req: Request, res: Response) => {
 
 //* 유저 전체 조회
 const getAllUser = async (req: Request, res: Response) => {
-  const data = await userService.getAllUser();
+  const {page, limit} = req.query;
+  const data = await userService.getAllUser(Number(page),Number(limit) )
   return res.status(200).json({ status: 200, message: "유저 전체 조회 성공", data });
+
 };
 
 //* 유저 정보 업데이트
@@ -100,6 +102,20 @@ const getUserById = async (req: Request, res: Response) => {
 
   return res.status(200).json({ status: 200, message: "유저 조회 성공", data });
 };
+
+//* GET ~/api/user?keyword=예원
+const searchUserByUserName = async(req: Request, res: Response) =>{
+  const { keyword,option} = req.query ; // keyword = 가희
+
+  const data = await userService.searchUserByName(keyword as string,option as string);
+
+  if (!data){
+    return res.status(sc.BAD_REQUEST).send(fail(sc.BAD_REQUEST, rm.SEARCH_USER_FAIL));
+  }
+
+  return res.status(sc.OK).send(success(sc.OK, rm.SEARCH_USER_SUCCESS, data));
+
+}
 
 const userController = {
   createUser,
