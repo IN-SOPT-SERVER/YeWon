@@ -1,8 +1,8 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { sc } from "../constants";
-import { UserCreateDTO } from "../interfaces/UserCreateDTO";
-import { UserSignInDTO } from "../interfaces/UserSignInDTO";
+import { UserCreateDTO } from "../interfaces/user/UserCreateDTO";
+import { UserSignInDTO } from "../interfaces/user/UserSignInDTO";
 
 const prisma = new PrismaClient();
 
@@ -45,8 +45,12 @@ const signIn = async (userSignInDto: UserSignInDTO) => {
 };
 
 //* 유저 전체 조회
-const getAllUser = async () => {
-  const data = await prisma.user.findMany();
+const getAllUser = async (page: number, limit: number) => { // page: 페이지 수 , limit:한 페이지 당 몇개의 data를 보여줄건지
+  const data = await prisma.user.findMany({
+    skip:(page - 1) * limit, // 1페이지일 경우 다 보여주면 되므로
+    take: limit,
+  });
+
   return data;
 };
 
@@ -84,6 +88,54 @@ const getUserById = async (userId: number) => {
   return user;
 };
 
+//*- 이름으로 유저 조회 (query)
+const searchUserByName = async (keyword: string, option: string)=> {
+  //?유저 선착순
+  if ( option === "desc" ){
+   const data = await prisma.user.findMany({
+     where: {
+       userName: {
+         contains: keyword,
+       },
+     },
+     orderBy: { // 정렬
+       createdAt: 'desc',
+     }
+   });
+   return data;
+  }
+ 
+  //? 유저 오래된 순 
+  if ( option === "asc" ){
+   const data = await prisma.user.findMany({
+     where: {
+       userName: {
+         contains: keyword,
+       },
+     },
+     orderBy: {
+       createdAt: 'asc',
+     }
+   });
+   return data;
+  }
+ 
+  //? 이름을 오름 차순으로 정렬 
+  if ( option === "nameDesc"){
+     const data = await prisma.user.findMany({
+       where: {
+         userName: {
+           contains: keyword
+         }
+       },
+       orderBy: {
+         userName: 'desc',
+       }
+     });
+     return data;
+  }
+}
+
 const userService = {
   createUser,
   signIn,
@@ -91,6 +143,7 @@ const userService = {
   updateUser,
   deleteUser,
   getUserById,
+  searchUserByName
 };
 
 export default userService;
